@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_real_merced/pages/auth/view/login.dart';
+import 'package:hotel_real_merced/pages/auth/auth-log-in/view/login.dart';
 
 class Imageheder extends StatelessWidget {
   const Imageheder({super.key});

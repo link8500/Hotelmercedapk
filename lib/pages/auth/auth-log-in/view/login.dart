@@ -1,34 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../auth/view/login.dart';
-import '../../../core/utils/validation_utils.dart';
+import 'dart:async';
+import '../../auth-sign-in/view/register.dart';
+import '../../../../core/utils/validation_utils.dart';
+import '../../../../core/utils/security_manager.dart';
 
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _acceptTerms = false;
+  bool _rememberMe = false;
+  final SecurityManager _securityManager = SecurityManager();
+  Timer? _lockoutTimer;
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _lockoutTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleLogin() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    // Verificar si el email está bloqueado
+    if (_securityManager.isEmailBlocked(email)) {
+      final remainingTime = _securityManager.getRemainingLockoutTime(email);
+      if (remainingTime != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cuenta bloqueada temporalmente. Intenta de nuevo en ${_securityManager.formatRemainingTime(remainingTime)}',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Simular verificación de credenciales (aquí iría la lógica real)
+    bool loginSuccessful = _simulateLogin(email, password);
+
+    if (loginSuccessful) {
+      // Limpiar intentos fallidos en caso de login exitoso
+      _securityManager.clearFailedAttempts(email);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Login exitoso',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: const Color(0xFF667eea),
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      // Registrar intento fallido
+      _securityManager.recordFailedAttempt(email);
+      
+      final remainingAttempts = _securityManager.getRemainingAttempts(email);
+      
+      if (remainingAttempts <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Credenciales incorrectas. Te quedan $remainingAttempts intentos.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // Simular verificación de login (reemplazar con lógica real)
+  bool _simulateLogin(String email, String password) {
+    // Para propósitos de demostración, solo aceptar credenciales específicas
+    return email == 'demo@gmail.com' && password == 'Demo123!';
   }
 
   @override
@@ -122,7 +201,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                           Text(
-                            "Crea tu cuenta para comenzar",
+                            "Inicia sesión para continuar",
                             style: GoogleFonts.poppins(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 16,
@@ -139,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
             
             const SizedBox(height: 40),
             
-            // Formulario de registro
+            // Formulario de login
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
               child: Form(
@@ -149,7 +228,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     // Título del formulario
                     Text(
-                      "Crear Cuenta",
+                      "Iniciar Sesión",
                       style: GoogleFonts.poppins(
                         color: const Color(0xFF2D3748),
                         fontSize: 28,
@@ -158,7 +237,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Completa la información para registrarte",
+                      "Ingresa tus credenciales para acceder",
                       style: GoogleFonts.poppins(
                         color: Colors.grey[600],
                         fontSize: 16,
@@ -166,60 +245,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     
                     const SizedBox(height: 30),
-                    
-                    // Campo de nombre completo
-                    Text(
-                      "Nombre completo",
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF2D3748),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          prefixIcon: const Icon(
-                            Icons.person_outline,
-                            color: Color(0xFF667eea),
-                          ),
-                          hintText: "Tu nombre completo",
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey[400],
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                        ),
-                        style: GoogleFonts.poppins(fontSize: 16),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu nombre';
-                          }
-                          if (value.length < 2) {
-                            return 'El nombre debe tener al menos 2 caracteres';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
                     
                     // Campo de email
                     Text(
@@ -276,61 +301,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     
                     const SizedBox(height: 20),
                     
-                    // Campo de teléfono
-                    Text(
-                      "Número de teléfono",
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF2D3748),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          prefixIcon: const Icon(
-                            Icons.phone_outlined,
-                            color: Color(0xFF667eea),
-                          ),
-                          hintText: "+505 1234 5678",
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey[400],
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                        ),
-                        style: GoogleFonts.poppins(fontSize: 16),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor ingresa tu número de teléfono';
-                          }
-                          if (value.length < 8) {
-                            return 'Por favor ingresa un número válido';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
                     // Campo de contraseña
                     Text(
                       "Contraseña",
@@ -381,7 +351,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               color: Colors.grey[400],
                             ),
                           ),
-                          hintText: "Mínimo 6 caracteres",
+                          hintText: "Tu contraseña",
                           hintStyle: GoogleFonts.poppins(
                             color: Colors.grey[400],
                           ),
@@ -395,107 +365,42 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 15),
                     
-                    // Campo de confirmar contraseña
-                    Text(
-                      "Confirmar contraseña",
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF2D3748),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: _obscureConfirmPassword,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          prefixIcon: const Icon(
-                            Icons.lock_outline,
-                            color: Color(0xFF667eea),
-                          ),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
-                              });
-                            },
-                            icon: Icon(
-                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                          hintText: "Repite tu contraseña",
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey[400],
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                        ),
-                        style: GoogleFonts.poppins(fontSize: 16),
-                        validator: (value) => ValidationUtils.validateConfirmPassword(value, _passwordController.text),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Checkbox de términos y condiciones
+                    // Recordarme y olvidé contraseña
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Checkbox(
-                          value: _acceptTerms,
-                          onChanged: (value) {
-                            setState(() {
-                              _acceptTerms = value ?? false;
-                            });
-                          },
-                          activeColor: const Color(0xFF667eea),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: RichText(
-                              text: TextSpan(
-                                style: GoogleFonts.poppins(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
-                                children: [
-                                  const TextSpan(text: "Acepto los "),
-                                  TextSpan(
-                                    text: "términos y condiciones",
-                                    style: GoogleFonts.poppins(
-                                      color: const Color(0xFF667eea),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const TextSpan(text: " y la "),
-                                  TextSpan(
-                                    text: "política de privacidad",
-                                    style: GoogleFonts.poppins(
-                                      color: const Color(0xFF667eea),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: _rememberMe,
+                              onChanged: (value) {
+                                setState(() {
+                                  _rememberMe = value ?? false;
+                                });
+                              },
+                              activeColor: const Color(0xFF667eea),
+                            ),
+                            Text(
+                              "Recordarme",
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[600],
+                                fontSize: 14,
                               ),
+                            ),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // TODO: Implementar recuperación de contraseña
+                          },
+                          child: Text(
+                            "¿Olvidaste tu contraseña?",
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF667eea),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -504,7 +409,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     
                     const SizedBox(height: 30),
                     
-                    // Botón de registro
+                    // Botón de login
                     Container(
                       width: double.infinity,
                       height: 55,
@@ -523,39 +428,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            if (!_acceptTerms) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Debes aceptar los términos y condiciones',
-                                    style: GoogleFonts.poppins(),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            
-                            // TODO: Implementar lógica de registro
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Registro exitoso',
-                                  style: GoogleFonts.poppins(),
-                                ),
-                                backgroundColor: const Color(0xFF667eea),
-                              ),
-                            );
-                            
-                            // Redirigir a login después del registro exitoso
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
-                              ),
-                            );
-                          }
+                          _handleLogin();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
@@ -565,7 +438,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         child: Text(
-                          "Crear Cuenta",
+                          "Iniciar Sesión",
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 18,
@@ -577,13 +450,136 @@ class _RegisterPageState extends State<RegisterPage> {
                     
                     const SizedBox(height: 25),
                     
-                    // Enlace a login
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: Colors.grey[300],
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Text(
+                            "O continúa con",
+                            style: GoogleFonts.poppins(
+                              color: Colors.grey[500],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: Colors.grey[300],
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 25),
+                    
+                    // Botones de redes sociales
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 55,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey[300]!),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // TODO: Implementar login con Google
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.g_mobiledata,
+                                color: Color(0xFFDB4437),
+                                size: 24,
+                              ),
+                              label: Text(
+                                "Google",
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF2D3748),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Container(
+                            height: 55,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey[300]!),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                // TODO: Implementar login con Facebook
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.facebook,
+                                color: Color(0xFF1877F2),
+                                size: 24,
+                              ),
+                              label: Text(
+                                "Facebook",
+                                style: GoogleFonts.poppins(
+                                  color: const Color(0xFF2D3748),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Enlace a registro
                     Center(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "¿Ya tienes cuenta? ",
+                            "¿No tienes cuenta? ",
                             style: GoogleFonts.poppins(
                               color: Colors.grey[600],
                               fontSize: 16,
@@ -591,15 +587,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           TextButton(
                             onPressed: () {
-                              Navigator.pushReplacement(
+                              Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const LoginPage(),
+                                  builder: (context) => const RegisterPage(),
                                 ),
                               );
                             },
                             child: Text(
-                              "Inicia sesión aquí",
+                              "Regístrate aquí",
                               style: GoogleFonts.poppins(
                                 color: const Color(0xFF667eea),
                                 fontSize: 16,
