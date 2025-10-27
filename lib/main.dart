@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hotel_real_merced/pages/home.dart';
+import 'package:hotel_real_merced/pages/home/view/home.dart';
 
 
 void main() => runApp(const MyApp());
