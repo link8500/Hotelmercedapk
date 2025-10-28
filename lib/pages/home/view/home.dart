@@ -16,7 +16,7 @@ class _nameState extends State<home> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       floatingActionButton: Floatingbutton(),
-      body: SingleChildScrollView(
+      body: SafeArea(child:  SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -128,6 +128,7 @@ class _nameState extends State<home> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
