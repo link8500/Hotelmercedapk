@@ -37,7 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SingleChildScrollView(
-        child: Column(
+        child: SafeArea(child:Column(
           children: [
             // Header con imagen de fondo
             Imagenauth(textoinicio: "Crea tu cuenta para comenzar",),
@@ -522,6 +522,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
