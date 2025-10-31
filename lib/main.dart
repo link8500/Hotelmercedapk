@@ -10,7 +10,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: home(),
+      home: const HomePage(),
       title: 'Hotel Real Merced app',
       debugShowCheckedModeBanner: false,
     );

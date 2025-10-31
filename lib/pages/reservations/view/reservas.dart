@@ -7,9 +7,25 @@ class Reservas extends StatelessWidget {
   Widget build(BuildContext context) {
     return  Scaffold(
         appBar: AppBar(
-          title: Text('Reservaciones y Disponibilidad '),
+          title: const Text('Reservaciones y Disponibilidad'),
         ),
-        body:IconButton(icon:Icon(Icons.favorite),onPressed: (){})
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Próximamente: Gestión de reservaciones',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                IconButton(icon: const Icon(Icons.favorite), onPressed: () {})
+              ],
+            ),
+          ),
+        )
       );
   }
 }

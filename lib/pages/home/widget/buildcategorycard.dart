@@ -16,7 +16,7 @@ class BuildCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 180, // Ajusta según tu diseño
+      height: 180,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(

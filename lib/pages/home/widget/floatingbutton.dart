@@ -25,7 +25,7 @@ class Floatingbutton extends StatelessWidget {
         ),
         child: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => Reservas()));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const Reservas()));
         },
           backgroundColor: Colors.transparent,
           elevation: 0,

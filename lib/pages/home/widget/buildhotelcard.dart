@@ -34,122 +34,147 @@ class BuildHotelCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-            child: SizedBox(
-              height: 120,
+          _HotelImage(imagePath: imagePath),
+          _HotelInfo(title: title, location: location, rating: rating, price: price),
+        ],
+      ),
+    );
+  }
+}
+
+class _HotelImage extends StatelessWidget {
+  const _HotelImage({required this.imagePath});
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(20),
+        topRight: Radius.circular(20),
+      ),
+      child: SizedBox(
+        height: 120,
+        width: double.infinity,
+        child: Stack(
+          children: [
+            Image.asset(
+              imagePath,
               width: double.infinity,
-              child: Stack(
-                children: [
-                  // Imagen del hotel
-                  Image.asset(
-                    imagePath,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                  // Overlay oscuro para mejor legibilidad del texto
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.3),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Patrón decorativo
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                  ),
-                  // Ícono del hotel
-                  const Center(
-                    child: Icon(Icons.hotel, color: Colors.white, size: 40),
-                  ),
-                ],
+              height: double.infinity,
+              fit: BoxFit.cover,
+            ),
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF2D3748),
-                  ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      location,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      rating,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ),
-                    Text(
-                      price,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF667eea),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
+            Positioned(
+              bottom: 10,
+              left: 10,
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+            const Center(
+              child: Icon(Icons.hotel, color: Colors.white, size: 40),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HotelInfo extends StatelessWidget {
+  const _HotelInfo({
+    required this.title,
+    required this.location,
+    required this.rating,
+    required this.price,
+  });
+
+  final String title;
+  final String location;
+  final String rating;
+  final String price;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                location,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                rating,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF59E0B),
+                ),
+              ),
+              Text(
+                price,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF667eea),
+                ),
+              ),
+            ],
           ),
         ],
       ),
