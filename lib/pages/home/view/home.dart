@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hotel_real_merced/pages/home/models/Imageheder.dart';
 import 'package:hotel_real_merced/pages/home/widget/buildcategorycard.dart';
 import 'package:hotel_real_merced/pages/home/widget/buildhotelcard.dart';
-import 'package:hotel_real_merced/pages/home/widget/floatingbutton.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatelessWidget {
@@ -12,7 +11,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      floatingActionButton: const Floatingbutton(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(

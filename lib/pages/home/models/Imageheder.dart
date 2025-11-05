@@ -109,7 +109,7 @@ class _TopBar extends StatelessWidget {
                 MaterialPageRoute(builder: (context) => const LoginPage()),
               );
             },
-            icon: const Icon(Icons.person_outline, color: Colors.white, size: 24),
+            icon: const Icon(Icons.search, color: Colors.white, size: 24),
           ),
         ),
       ],

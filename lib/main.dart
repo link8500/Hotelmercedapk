@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hotel_real_merced/pages/home/view/home.dart';
+import 'package:hotel_real_merced/pages/navegation/views/navegacion.dart';
+import 'package:hotel_real_merced/pages/reservations/view/reservas.dart';
 
 
 void main() => runApp(const MyApp());
@@ -10,9 +11,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: const HomePage(),
+      home: const Navegacion(),
       title: 'Hotel Real Merced app',
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/reservas': (_) => const Reservas(),
+      },
     );
   }
 }
