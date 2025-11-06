@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_real_merced/pages/home/models/Imageheder.dart';
 import 'package:hotel_real_merced/pages/home/widget/buildcategorycard.dart';
-import 'package:hotel_real_merced/pages/home/widget/buildhotelcard.dart';
+import 'package:hotel_real_merced/pages/home/models/buildhotelcard.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatelessWidget {
