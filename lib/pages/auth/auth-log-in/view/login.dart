@@ -11,8 +11,10 @@ import 'package:hotel_real_merced/pages/auth/widget/rememberandforgotrow.dart';
 import 'package:hotel_real_merced/pages/auth/widget/socialbuttonsrow.dart';
 import 'package:hotel_real_merced/shared/widget/imagenauth.dart';
 import 'package:hotel_real_merced/shared/widget/text.dart';
-import 'dart:async';
-import '../../../../core/utils/security_manager.dart';
+import 'package:hotel_real_merced/core/services/supabase_service.dart';
+import 'package:hotel_real_merced/core/utils/security_manager.dart';
+import 'package:hotel_real_merced/pages/auth/auth-log-in/view/lockout_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,95 +27,204 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final SecurityManager _securityManager = SecurityManager();
   bool _obscurePassword = true;
   bool _rememberMe = false;
-  final SecurityManager _securityManager = SecurityManager();
-  Timer? _lockoutTimer;
+  bool _isLoading = false;
+  int _remainingAttempts = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLockoutStatus();
+    _loadRemainingAttempts();
+  }
+
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _lockoutTimer?.cancel();
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _checkLockoutStatus() async {
+    final isLocked = await _securityManager.isAppLocked();
+    if (isLocked && mounted) {
+      // Navegar a la pantalla de bloqueo (usar push para poder volver)
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const LockoutScreen(),
+        ),
+      ).then((_) {
+        // Cuando se regrese de la pantalla de bloqueo, recargar intentos
+        _loadRemainingAttempts();
+      });
+    }
+  }
+
+  Future<void> _loadRemainingAttempts() async {
+    final attempts = await _securityManager.getRemainingAttempts();
+    if (mounted) {
+      setState(() {
+        _remainingAttempts = attempts;
+      });
+    }
+  }
+
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-
-    // Verificar si el email está bloqueado
-    if (_securityManager.isEmailBlocked(email)) {
-      final remainingTime = _securityManager.getRemainingLockoutTime(email);
-      if (remainingTime != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Cuenta bloqueada temporalmente. Intenta de nuevo en ${_securityManager.formatRemainingTime(remainingTime)}',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+    // Verificar si la aplicación está bloqueada antes de intentar login
+    final isLocked = await _securityManager.isAppLocked();
+    if (isLocked) {
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const LockoutScreen(),
           ),
-        );
+        ).then((_) {
+          // Cuando se regrese de la pantalla de bloqueo, recargar intentos
+          if (mounted) {
+            _loadRemainingAttempts();
+          }
+        });
+      }
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      // Autenticar con Supabase
+      final response = await SupabaseService.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        // Login exitoso - limpiar intentos fallidos
+        await _securityManager.clearFailedAttempts();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Login exitoso',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: const Color(0xFF667eea),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      }
+    } on AuthException catch (e) {
+      // Registrar intento fallido
+      await _securityManager.recordFailedAttempt();
+      
+      // Actualizar intentos restantes
+      await _loadRemainingAttempts();
+      
+      // Verificar si la app debe bloquearse
+      final isLocked = await _securityManager.isAppLocked();
+      if (isLocked && mounted) {
+        // Navegar a la pantalla de bloqueo (usar push para poder volver)
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const LockoutScreen(),
+          ),
+        ).then((_) {
+          // Cuando se regrese de la pantalla de bloqueo, recargar intentos
+          if (mounted) {
+            _loadRemainingAttempts();
+          }
+        });
         return;
       }
-    }
 
-    // Simular verificación de credenciales (aquí iría la lógica real)
-    bool loginSuccessful = _simulateLogin(email, password);
+      if (mounted) {
+        String errorMessage = 'Error al iniciar sesión';
+        String attemptsMessage = '';
+        
+        // Manejar diferentes tipos de errores de Supabase
+        if (e.message.toLowerCase().contains('invalid login credentials') || 
+            e.message.toLowerCase().contains('invalid credentials')) {
+          errorMessage = 'Credenciales incorrectas. Por favor verifica tu email y contraseña.';
+          
+          // Mostrar mensaje de intentos restantes
+          if (_remainingAttempts > 0) {
+            attemptsMessage = '\nTe quedan $_remainingAttempts intentos.';
+          } else {
+            attemptsMessage = '\nHas alcanzado el límite de intentos.';
+          }
+        } else if (e.message.toLowerCase().contains('email not confirmed')) {
+          errorMessage = 'Por favor verifica tu email antes de iniciar sesión.';
+        } else if (e.message.toLowerCase().contains('too many requests')) {
+          errorMessage = 'Demasiados intentos. Por favor intenta más tarde.';
+        } else {
+          errorMessage = 'Error al iniciar sesión: ${e.message}';
+        }
 
-    if (loginSuccessful) {
-      // Limpiar intentos fallidos en caso de login exitoso
-      _securityManager.clearFailedAttempts(email);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login exitoso', style: GoogleFonts.poppins()),
-          backgroundColor: const Color(0xFF667eea),
-        ),
-      );
-      Navigator.pop(context);
-    } else {
-      // Registrar intento fallido
-      _securityManager.recordFailedAttempt(email);
-
-      final remainingAttempts = _securityManager.getRemainingAttempts(email);
-
-      if (remainingAttempts <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.',
+              '$errorMessage$attemptsMessage',
               style: GoogleFonts.poppins(),
             ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Credenciales incorrectas. Te quedan $remainingAttempts intentos.',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
+            backgroundColor: _remainingAttempts <= 1 ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
-    }
-  }
+    } catch (e) {
+      // Registrar intento fallido para errores inesperados también
+      await _securityManager.recordFailedAttempt();
+      await _loadRemainingAttempts();
+      
+      // Verificar si la app debe bloquearse
+      final isLocked = await _securityManager.isAppLocked();
+      if (isLocked && mounted) {
+        // Navegar a la pantalla de bloqueo (usar push para poder volver)
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const LockoutScreen(),
+          ),
+        ).then((_) {
+          // Cuando se regrese de la pantalla de bloqueo, recargar intentos
+          if (mounted) {
+            _loadRemainingAttempts();
+          }
+        });
+        return;
+      }
 
-  // Simular verificación de login (reemplazar con lógica real)
-  bool _simulateLogin(String email, String password) {
-    // Para propósitos de demostración, solo aceptar credenciales específicas
-    return email == 'demo@gmail.com' && password == 'Demo123!';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error inesperado al iniciar sesión',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -178,8 +289,60 @@ class _LoginPageState extends State<LoginPage> {
                           _rememberMe = v ?? false;
                         }),
                       ),
+                      // Mostrar intentos restantes si hay menos de 3
+                      if (_remainingAttempts < 3 && _remainingAttempts > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _remainingAttempts <= 1
+                                  ? Colors.orange.withOpacity(0.1)
+                                  : Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _remainingAttempts <= 1
+                                    ? Colors.orange
+                                    : Colors.blue,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _remainingAttempts <= 1
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.info_outline,
+                                  color: _remainingAttempts <= 1
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Te quedan $_remainingAttempts intentos antes del bloqueo',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: _remainingAttempts <= 1
+                                          ? Colors.orange.shade900
+                                          : Colors.blue.shade900,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 30),
-                      Loginbutton(onPressed: _handleLogin,text: "Iniciar Sesión",),
+                      Loginbutton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        text: _isLoading ? "Iniciando sesión..." : "Iniciar Sesión",
+                      ),
                       const SizedBox(height: 25),
                       const Ordivider(),
                       const SizedBox(height: 25),

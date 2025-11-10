@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hotel_real_merced/shared/widget/text.dart';
 
 class Loginbutton extends StatelessWidget {
-   final VoidCallback onPressed;
+   final VoidCallback? onPressed;
    final String text;
   const Loginbutton({super.key,required this.onPressed,required this.text});
 
@@ -13,16 +13,21 @@ class Loginbutton extends StatelessWidget {
       height: 55,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        gradient: onPressed == null 
+          ? null 
+          : const LinearGradient(
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            ),
+        color: onPressed == null ? Colors.grey : null,
+        boxShadow: onPressed == null 
+          ? [] 
+          : [
+              BoxShadow(
+                color: const Color(0xFF667eea).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -32,11 +37,12 @@ class Loginbutton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
+          disabledBackgroundColor: Colors.transparent,
         ),
-        child: const Textutils(
+        child: Textutils(
           fontSize: 18,
           selectcolor: Colors.white,
-          texto: "Iniciar Sesión",
+          texto: text,
         ),
       ),
     );

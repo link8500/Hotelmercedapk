@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:hotel_real_merced/pages/navegation/views/navegacion.dart';
 import 'package:hotel_real_merced/pages/reservations/view/reservas.dart';
+import 'package:hotel_real_merced/core/services/supabase_service.dart';
 
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar Supabase
+  await SupabaseService.initialize();
+  
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

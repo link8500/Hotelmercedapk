@@ -90,7 +90,7 @@ class Imagenauth extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "${textoinicio}",
+                            textoinicio,
                             style: GoogleFonts.poppins(
                               color: Colors.white.withOpacity(0.9),
                               fontSize: 16,

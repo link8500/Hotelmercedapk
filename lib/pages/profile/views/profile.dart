@@ -6,6 +6,7 @@ import 'package:hotel_real_merced/pages/profile/widgets/primarybutton.dart';
 import 'package:hotel_real_merced/pages/profile/widgets/profilestat.dart';
 import 'package:hotel_real_merced/pages/profile/widgets/sectiontitle.dart';
 import 'package:hotel_real_merced/pages/profile/widgets/settingstile.dart';
+import 'package:hotel_real_merced/pages/admin/auth/admin_login.dart';
 
 class Profile extends StatelessWidget {
   const Profile({super.key});
@@ -74,6 +75,23 @@ class Profile extends StatelessWidget {
               const Settingstile(icon: Icons.notifications_none, title: 'Notificaciones'),
               const Settingstile(icon: Icons.language, title: 'Idioma'),
               const Settingstile(icon: Icons.lock_outline, title: 'Privacidad'),
+              
+              const SizedBox(height: 32),
+              const Sectiontitle(text: 'Administración')
+              ,
+              const SizedBox(height: 8),
+              Settingstile(
+                icon: Icons.admin_panel_settings,
+                title: 'Panel de Administrador',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminLoginPage(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),

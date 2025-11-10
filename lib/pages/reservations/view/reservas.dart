@@ -142,7 +142,7 @@ class _ReservasState extends State<Reservas> {
     if (_checkIn == null || _checkOut == null) return '-';
     final nights = _checkOut!.difference(_checkIn!).inDays;
     final total = 120 * (nights > 0 ? nights : 1);
-    return '\$' + total.toString();
+    return '\$$total';
   }
 
   String _formatDate(DateTime d) =>

@@ -15,7 +15,7 @@ class Textutils extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      "${texto}",
+      texto,
       style: GoogleFonts.poppins(
         color: selectcolor,
         fontSize: fontSize,

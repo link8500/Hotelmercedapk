@@ -10,6 +10,8 @@ import 'package:hotel_real_merced/pages/auth/widget/registerlink.dart';
 import 'package:hotel_real_merced/pages/auth/widget/termsrow.dart';
 import 'package:hotel_real_merced/shared/widget/imagenauth.dart';
 import 'package:hotel_real_merced/shared/widget/text.dart';
+import 'package:hotel_real_merced/core/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../auth-log-in/view/login.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -29,6 +31,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _acceptTerms = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -38,6 +41,113 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Debes aceptar los términos y condiciones',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final name = _nameController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      // Registrar usuario en Supabase
+      final response = await SupabaseService.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'full_name': name,
+          'phone': phone,
+        },
+      );
+
+      if (response.user != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Registro exitoso. Por favor verifica tu email antes de iniciar sesión.',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: const Color(0xFF667eea),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginPage(),
+            ),
+          );
+        }
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        String errorMessage = 'Error al crear la cuenta';
+        
+        // Manejar diferentes tipos de errores de Supabase
+        if (e.message.toLowerCase().contains('user already registered') || 
+            e.message.toLowerCase().contains('already registered')) {
+          errorMessage = 'Este email ya está registrado. Por favor inicia sesión.';
+        } else if (e.message.toLowerCase().contains('password')) {
+          errorMessage = 'La contraseña no cumple con los requisitos de seguridad.';
+        } else if (e.message.toLowerCase().contains('email')) {
+          errorMessage = 'El email no es válido.';
+        } else {
+          errorMessage = 'Error al crear la cuenta: ${e.message}';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMessage,
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error inesperado al crear la cuenta',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -139,38 +249,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 30),
                       Loginbutton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            if (!_acceptTerms) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Debes aceptar los términos y condiciones',
-                                    style: GoogleFonts.poppins(),
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return;
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Registro exitoso',
-                                  style: GoogleFonts.poppins(),
-                                ),
-                                backgroundColor: const Color(0xFF667eea),
-                              ),
-                            );
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
-                              ),
-                            );
-                          }
-                        },
-                        text: "Crear Cuenta",
+                        onPressed: _isLoading ? null : _handleRegister,
+                        text: _isLoading ? "Creando cuenta..." : "Crear Cuenta",
                       ),
                       const SizedBox(height: 25),
                       Registerlink(builder1: (context) => const LoginPage(), text1: "¿Ya tienes cuenta? ", text2: "Inicia sesión aquí"),
